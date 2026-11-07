@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated Prisma client
+/src/generated/prisma/
+!.env.example
+
+# Isolated Python runtime and test cache
+/python/.venv/
+/python/.pytest_cache/
+**/__pycache__/
+*.egg-info/

@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "width": 595.28,
+  "height": 420.945,
+  "normalizationScale": 3,
+  "maxQuestions": 40,
+  "markerSize": 18,
+  "markers": [
+    { "id": 1, "x": 21, "y": 21 },
+    { "id": 2, "x": 574.28, "y": 21 },
+    { "id": 3, "x": 574.28, "y": 399.945 },
+    { "id": 4, "x": 21, "y": 399.945 }
+  ],
+  "qr": { "x": 477, "y": 22, "size": 81 },
+  "bubbleRadius": 4.2,
+  "bubbleInnerRadius": 2.7,
+  "bubbleX": [57, 77, 97, 117, 137],
+  "columnX": [0, 136, 272, 408],
+  "firstRowY": 148,
+  "rowStep": 20
+}

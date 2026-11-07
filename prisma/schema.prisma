@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  COORDENACAO
+  PROFESSOR
+}
+
+enum UserStatus {
+  ATIVO
+  INATIVO
+}
+
+model User {
+  id           String      @id @default(uuid()) @db.Uuid
+  firstName    String      @db.VarChar(80)
+  lastName     String      @db.VarChar(80)
+  email        String      @unique @db.VarChar(160)
+  passwordHash String
+  role         Role
+  status       UserStatus  @default(ATIVO)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  sessions     Session[]
+  correctionBatches CorrectionBatch[] @relation("BatchCreator")
+  confirmedCorrections Correction[] @relation("CorrectionConfirmer")
+  reviewedDrafts CorrectionDraft[] @relation("DraftReviewer")
+  correctionEvents CorrectionEvent[] @relation("CorrectionEventActor")
+
+  @@index([role, status])
+}
+
+model Classroom {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @unique @db.VarChar(80)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  students  Student[]
+  exams     Exam[]
+}
+
+model Exam {
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String    @db.VarChar(120)
+  classroomId        String    @db.Uuid
+  classroom          Classroom @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  questions          Int
+  applicationDate    DateTime  @db.Date
+  correctionOpensAt  DateTime  @db.Date
+  correctionClosesAt DateTime  @db.Date
+  answerKey          Json
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  correctionBatches  CorrectionBatch[]
+  correctionDrafts   CorrectionDraft[]
+  corrections        Correction[]
+
+  @@index([classroomId, applicationDate])
+}
+
+model Student {
+  id          String    @id @default(uuid()) @db.Uuid
+  firstName   String    @db.VarChar(80)
+  lastName    String    @db.VarChar(80)
+  classroomId String    @db.Uuid
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  correctionDrafts CorrectionDraft[]
+  corrections Correction[]
+
+  @@index([classroomId, lastName, firstName])
+}
+
+model Session {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHash String    @unique @db.VarChar(64)
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  rotatedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model LoginThrottle {
+  key         String   @id @db.VarChar(64)
+  attempts    Int      @default(0)
+  windowStart DateTime @default(now())
+}
+
+model CorrectionBatch {
+  id          String   @id @default(uuid()) @db.Uuid
+  examId      String   @db.Uuid
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Restrict)
+  createdById String   @db.Uuid
+  createdBy   User     @relation("BatchCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  maxCards    Int
+  analysisRequests Int @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  drafts      CorrectionDraft[]
+
+  @@index([createdById, expiresAt])
+  @@index([expiresAt])
+}
+
+model CorrectionDraft {
+  id             String   @id @default(uuid()) @db.Uuid
+  batchId        String   @db.Uuid
+  batch          CorrectionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  examId         String   @db.Uuid
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Restrict)
+  studentId      String   @db.Uuid
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  imageHash      String   @db.VarChar(64)
+  answerKeyHash  String   @db.VarChar(64)
+  layoutVersion  Int
+  readings       Json
+  quality        Json
+  manualChanges  Json
+  revision       Int      @default(0)
+  reviewedAt     DateTime?
+  reviewedById   String?  @db.Uuid
+  reviewedBy     User?    @relation("DraftReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([batchId, studentId])
+  @@index([examId, studentId])
+  @@index([expiresAt])
+}
+
+model Correction {
+  id             String   @id @default(uuid()) @db.Uuid
+  examId         String   @db.Uuid
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Restrict)
+  studentId      String   @db.Uuid
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  sourceDraftId  String   @unique @db.Uuid
+  studentName    String   @db.VarChar(170)
+  className      String   @db.VarChar(80)
+  examName       String   @db.VarChar(120)
+  confirmedByName String  @db.VarChar(170)
+  answerKeyHash  String   @db.VarChar(64)
+  total          Int
+  correct        Int
+  incorrect      Int
+  blank          Int
+  multiple       Int
+  percentage     Float
+  confirmedById  String   @db.Uuid
+  confirmedBy    User     @relation("CorrectionConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  answers        CorrectionAnswer[]
+  events         CorrectionEvent[]
+
+  @@unique([examId, studentId])
+  @@index([examId, correct])
+}
+
+model CorrectionAnswer {
+  correctionId String     @db.Uuid
+  correction   Correction @relation(fields: [correctionId], references: [id], onDelete: Cascade)
+  question     Int
+  selected     Json
+  correct      String     @db.VarChar(1)
+  status       String     @db.VarChar(24)
+  score        Int
+  manual       Boolean    @default(false)
+
+  @@id([correctionId, question])
+}
+
+model CorrectionEvent {
+  id           String     @id @default(uuid()) @db.Uuid
+  correctionId String     @db.Uuid
+  correction   Correction @relation(fields: [correctionId], references: [id], onDelete: Cascade)
+  actorId      String     @db.Uuid
+  actor        User       @relation("CorrectionEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  action       String     @db.VarChar(32)
+  details      Json
+  createdAt    DateTime   @default(now())
+
+  @@index([correctionId, createdAt])
+}

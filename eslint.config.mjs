@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party MIT QR encoder copied locally for offline builds.
+    "src/lib/vendor/**",
   ]),
 ]);
 
