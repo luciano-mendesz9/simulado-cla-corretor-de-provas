@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useData } from "./data-provider";
@@ -17,7 +18,7 @@ const teacherLinks = [
 ];
 
 export function Brand({ compact = false }: { compact?: boolean }) {
-  return <div className="brand"><span className="brand-mark" aria-hidden="true">✓</span><span><strong>Simulado <em>CLA</em></strong>{!compact && <small>COLÉGIO LEONEL AMORIM</small>}</span></div>;
+  return <div className="brand"><Image className="brand-logo" src="/simulado-cla-logo.png" alt="" width={44} height={44} priority /><span><strong>Simulado <em>CLA</em></strong>{!compact && <small>COLÉGIO LEONEL AMORIM</small>}</span></div>;
 }
 
 export function AppShell({ role, title, eyebrow, subtitle, actions, children }: { role: Role; title: string; eyebrow?: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
